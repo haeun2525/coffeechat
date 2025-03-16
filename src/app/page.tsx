@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ProfileCard from '@/components/ProfileCard';
 import CoffeeChatProposalModal from '@/components/CoffeeChatProposalModal';
 import FavoriteCompleteModal from '@/components/FavoriteCompleteModal';
@@ -25,6 +25,8 @@ const MOCK_USERS: User[] = [
       { day: '수', slots: ['13:00', '16:00'] },
       { day: '금', slots: ['11:00', '15:00'] },
     ],
+    department: '컴퓨터공학과',
+    studentId: '2021123456',
   },
   {
     id: '2',
@@ -38,6 +40,8 @@ const MOCK_USERS: User[] = [
       { day: '화', slots: ['11:00', '15:00'] },
       { day: '목', slots: ['13:00', '17:00'] },
     ],
+    department: '경영학과',
+    studentId: '2022123456',
   },
   {
     id: '3',
@@ -52,6 +56,8 @@ const MOCK_USERS: User[] = [
       { day: '수', slots: ['10:00', '14:00'] },
       { day: '금', slots: ['15:00', '18:00'] },
     ],
+    department: '디자인학과',
+    studentId: '2020123456',
   },
   {
     id: '4',
@@ -66,6 +72,8 @@ const MOCK_USERS: User[] = [
       { day: '목', slots: ['14:00', '17:00'] },
       { day: '금', slots: ['11:00', '15:00'] },
     ],
+    department: '심리학과',
+    studentId: '2021987654',
   },
 ];
 
@@ -78,6 +86,7 @@ export default function Home() {
   const [isCardVisible, setIsCardVisible] = useState(true);
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | undefined>(undefined);
   const [isFavoriteModalOpen, setIsFavoriteModalOpen] = useState(false);
+  const [isUnfavoriteModalOpen, setIsUnfavoriteModalOpen] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -114,30 +123,39 @@ export default function Home() {
 
   const handleFavorite = () => {
     const currentProfile = MOCK_USERS[currentProfileIndex];
+    
+    // 이미 찜한 상태인지 확인
+    if (favorites.has(currentProfile.id)) {
+      // 찜하기 취소 확인 모달 표시
+      setIsUnfavoriteModalOpen(true);
+    } else {
+      // 찜하기 추가
+      setFavorites(prev => {
+        const newFavorites = new Set(prev);
+        newFavorites.add(currentProfile.id);
+        return newFavorites;
+      });
+
+      // 찜 완료 모달 표시
+      setIsFavoriteModalOpen(true);
+    }
+    
+    // 카드는 그대로 유지 (사라지지 않음)
+  };
+
+  // 찜하기 취소
+  const handleConfirmUnfavorite = () => {
+    const currentProfile = MOCK_USERS[currentProfileIndex];
+    
+    // 찜하기 목록에서 제거
     setFavorites(prev => {
       const newFavorites = new Set(prev);
-      newFavorites.add(currentProfile.id);
+      newFavorites.delete(currentProfile.id);
       return newFavorites;
     });
-
-    // 찜 완료 모달 표시
-    setIsFavoriteModalOpen(true);
-
-    // 카드 오른쪽으로 사라지는 애니메이션
-    setExitDirection('right');
-    setIsCardVisible(false);
-
-    // 애니메이션이 끝난 후 다음 카드로 전환
-    setTimeout(() => {
-      if (currentProfileIndex < MOCK_USERS.length - 1) {
-        setCurrentProfileIndex(prev => prev + 1);
-        setIsCardVisible(true);
-        setExitDirection(undefined);
-      } else {
-        // 모든 프로필을 다 본 경우
-        router.push('/search');
-      }
-    }, 300);
+    
+    // 모달 닫기
+    setIsUnfavoriteModalOpen(false);
   };
 
   const handleProposeCoffeeChat = () => {
@@ -151,13 +169,11 @@ export default function Home() {
     // 모달 닫기
     setIsModalOpen(false);
     
-    // 다음 카드로 이동
+    // 다음 카드로 이동 (프로필 카드 사라지게 하기)
     handleSkip();
     
-    // 채팅 페이지로 이동 - 오류가 발생할 수 있는 부분
-    setTimeout(() => {
-      router.push('/chat');
-    }, 0);
+    // 성공 메시지 표시 (실제 구현에서는 토스트 메시지 등으로 대체)
+    alert(`커피챗 제안을 보냈습니다.`);
   };
 
   return (
@@ -181,7 +197,11 @@ export default function Home() {
 
       {/* 프로필 카드 섹션 */}
       <section className="mb-8 flex justify-center">
-        {currentProfileIndex < MOCK_USERS.length ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+          </div>
+        ) : currentProfileIndex < MOCK_USERS.length ? (
           <ProfileCard
             user={MOCK_USERS[currentProfileIndex]}
             onSkip={handleSkip}
@@ -195,15 +215,43 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-card-gradient backdrop-blur-sm p-6 rounded-xl border border-white/10 shadow-lg text-center max-w-sm"
+            className="bg-card-gradient backdrop-blur-sm p-8 rounded-3xl border border-white/10 shadow-lg text-center max-w-sm"
           >
-            <h3 className="text-xl font-semibold mb-2 text-white">
-              오늘 추천 친구를 모두 확인했어요
+            <div className="w-20 h-20 mx-auto bg-primary/20 rounded-full flex items-center justify-center mb-6">
+              <svg
+                className="w-10 h-10 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-3 text-white">
+              오늘 3명의 사용자를 모두 확인했어요!
             </h3>
-            <p className="text-white/70 mb-4">내일 새로운 추천을 확인해보세요!</p>
+            <p className="text-white/70 mb-6">내일은 또 어떤 사람들이 도착할까요?</p>
             <Link href="/search">
-              <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-                더 많은 친구 찾기
+              <button className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors w-full flex items-center justify-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                찾기 페이지로 이동
               </button>
             </Link>
           </motion.div>
@@ -381,6 +429,53 @@ export default function Home() {
         isOpen={isFavoriteModalOpen}
         onClose={() => setIsFavoriteModalOpen(false)}
       />
+
+      {/* 찜하기 취소 확인 모달 */}
+      <AnimatePresence>
+        {isUnfavoriteModalOpen && (
+          <>
+            {/* 배경 오버레이 */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+              onClick={() => setIsUnfavoriteModalOpen(false)}
+            />
+
+            {/* 모달 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-card-gradient backdrop-blur-md rounded-2xl border border-white/10 shadow-xl w-full max-w-sm overflow-hidden p-6 text-center">
+                <h2 className="text-xl font-bold text-white mb-4">
+                  찜하기를 취소하겠습니까?
+                </h2>
+                
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => setIsUnfavoriteModalOpen(false)}
+                    className="px-6 py-2 rounded-lg bg-black/30 text-white border border-white/10 hover:bg-black/50 transition-colors"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleConfirmUnfavorite}
+                    className="px-6 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

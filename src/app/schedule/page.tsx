@@ -1,92 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { format, addMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import TimeTable from '@/components/TimeTable';
 import CourseFormModal from '@/components/CourseFormModal';
-import type { Course, Semester } from '@/types/schedule';
-
-// 임시 데이터
-const INITIAL_SEMESTERS: Semester[] = [
-  {
-    id: '2024-1',
-    name: '2024년 1학기',
-    courses: [
-      {
-        id: '1',
-        name: '웹 프로그래밍',
-        professor: '김교수',
-        location: '공학관 401',
-        dayOfWeek: 1,
-        startTime: 9,
-        duration: 2,
-        color: '#4F46E5',
-      },
-      {
-        id: '2',
-        name: '데이터베이스',
-        professor: '이교수',
-        location: '공학관 505',
-        dayOfWeek: 3,
-        startTime: 14,
-        duration: 3,
-        color: '#EC4899',
-      },
-      {
-        id: '3',
-        name: '인공지능 개론',
-        professor: '박교수',
-        location: '과학관 302',
-        dayOfWeek: 0,
-        startTime: 13,
-        duration: 2,
-        color: '#10B981',
-      },
-      {
-        id: '4',
-        name: '컴퓨터 네트워크',
-        professor: '최교수',
-        location: '공학관 201',
-        dayOfWeek: 2,
-        startTime: 10,
-        duration: 2,
-        color: '#F59E0B',
-      },
-    ],
-  },
-  {
-    id: '2023-2',
-    name: '2023년 2학기',
-    courses: [
-      {
-        id: '5',
-        name: '자료구조',
-        professor: '정교수',
-        location: '공학관 301',
-        dayOfWeek: 1,
-        startTime: 10,
-        duration: 2,
-        color: '#3B82F6',
-      },
-      {
-        id: '6',
-        name: '알고리즘',
-        professor: '한교수',
-        location: '공학관 402',
-        dayOfWeek: 3,
-        startTime: 13,
-        duration: 2,
-        color: '#8B5CF6',
-      },
-    ],
-  },
-];
+import type { Course } from '@/types/schedule';
+import { useScheduleStore } from '@/store/scheduleStore';
 
 export default function SchedulePage() {
-  const [semesters, setSemesters] = useState<Semester[]>(INITIAL_SEMESTERS);
-  const [currentSemesterIndex, setCurrentSemesterIndex] = useState(0);
+  const { 
+    semesters, 
+    currentSemesterIndex, 
+    setCurrentSemesterIndex,
+    addCourse,
+    updateCourse,
+    deleteCourse,
+    addSemester
+  } = useScheduleStore();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | undefined>();
   const [isSemesterListOpen, setIsSemesterListOpen] = useState(false);
@@ -95,37 +28,13 @@ export default function SchedulePage() {
   const currentSemester = semesters[currentSemesterIndex];
 
   const handleAddCourse = (courseData: Omit<Course, 'id'>) => {
-    const newCourse = {
-      ...courseData,
-      id: uuidv4(),
-    };
-
-    setSemesters(prev => {
-      const updated = [...prev];
-      updated[currentSemesterIndex] = {
-        ...updated[currentSemesterIndex],
-        courses: [...updated[currentSemesterIndex].courses, newCourse],
-      };
-      return updated;
-    });
+    addCourse(currentSemesterIndex, courseData);
     setIsModalOpen(false);
   };
 
   const handleEditCourse = (courseData: Omit<Course, 'id'>) => {
     if (!selectedCourse) return;
-
-    setSemesters(prev => {
-      const updated = [...prev];
-      updated[currentSemesterIndex] = {
-        ...updated[currentSemesterIndex],
-        courses: updated[currentSemesterIndex].courses.map(course =>
-          course.id === selectedCourse.id
-            ? { ...courseData, id: course.id }
-            : course
-        ),
-      };
-      return updated;
-    });
+    updateCourse(currentSemesterIndex, selectedCourse.id, courseData);
     setIsModalOpen(false);
     setSelectedCourse(undefined);
   };
@@ -134,16 +43,7 @@ export default function SchedulePage() {
     if (!selectedCourse) return;
     
     if (confirm('이 과목을 삭제하시겠습니까?')) {
-      setSemesters(prev => {
-        const updated = [...prev];
-        updated[currentSemesterIndex] = {
-          ...updated[currentSemesterIndex],
-          courses: updated[currentSemesterIndex].courses.filter(
-            course => course.id !== selectedCourse.id
-          ),
-        };
-        return updated;
-      });
+      deleteCourse(currentSemesterIndex, selectedCourse.id);
       setIsModalOpen(false);
       setSelectedCourse(undefined);
     }
@@ -165,18 +65,16 @@ export default function SchedulePage() {
     const year = format(nextMonth, 'yyyy');
     const semester = parseInt(format(nextMonth, 'M')) <= 6 ? '1' : '2';
     
-    const newSemester: Semester = {
-      id: `${year}-${semester}`,
+    addSemester({
       name: `${year}년 ${semester}학기`,
       courses: [],
-    };
+    });
     
-    setSemesters(prev => [newSemester, ...prev]);
-    setCurrentSemesterIndex(0);
+    setIsSemesterListOpen(false);
   };
 
   return (
-    <main className="min-h-screen p-4">
+    <main className="min-h-screen p-4 bg-gradient-to-b from-primary/30 to-black">
       <div className="max-w-6xl mx-auto">
         {/* 헤더 */}
         <div className="bg-glass backdrop-blur-glass rounded-2xl p-6 mb-6 border border-white/10">
@@ -288,7 +186,6 @@ export default function SchedulePage() {
           <TimeTable
             courses={currentSemester.courses}
             onCourseClick={handleCourseClick}
-            currentDate={currentDate}
           />
         </div>
       </div>

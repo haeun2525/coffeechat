@@ -10,4 +10,7 @@ export interface User {
     day: string;
     slots: string[];
   }[];
+  department: string;
+  studentId: string;
+  hasSentRequest?: boolean;
 } 

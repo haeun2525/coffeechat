@@ -3,9 +3,9 @@ export interface Course {
   name: string;
   professor?: string;
   location?: string;
-  dayOfWeek: number; // 0-4 (월-금)
-  startTime: number; // 9-22 (시간)
-  duration: number; // 시간 단위
+  dayOfWeek: number; // 0-5 (월-토)
+  startTime: string; // 형식: "09:00", "14:30" 등
+  endTime: string; // 형식: "10:30", "16:00" 등
   color: string;
 }
 
