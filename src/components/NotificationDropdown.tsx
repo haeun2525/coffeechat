@@ -169,7 +169,7 @@ export default function NotificationDropdown({
       {isOpen && (
         <motion.div
           ref={dropdownRef}
-          className="absolute top-12 right-0 w-80 bg-card-gradient backdrop-blur-md rounded-xl border border-white/10 shadow-xl z-50 overflow-hidden"
+          className="absolute top-12 right-0 w-80 bg-black/80 backdrop-blur-md rounded-xl border border-white/10 shadow-xl z-50 overflow-hidden"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}

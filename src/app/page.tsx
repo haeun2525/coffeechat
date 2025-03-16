@@ -144,9 +144,9 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const handleConfirmProposal = (date: string, time: string, location: string, message: string) => {
+  const handleConfirmProposal = (message: string) => {
     // 실제 구현에서는 API 호출로 커피챗 제안 처리
-    console.log('커피챗 제안:', { date, time, location, message });
+    console.log('커피챗 제안:', { message });
     
     // 모달 닫기
     setIsModalOpen(false);
@@ -154,14 +154,16 @@ export default function Home() {
     // 다음 카드로 이동
     handleSkip();
     
-    // 채팅 페이지로 이동
-    router.push('/chat');
+    // 채팅 페이지로 이동 - 오류가 발생할 수 있는 부분
+    setTimeout(() => {
+      router.push('/chat');
+    }, 0);
   };
 
   return (
     <main className="min-h-screen px-4 py-6">
-      {/* 헤더 섹션 */}
-      <section className="mb-8">
+      {/* 헤더 섹션 제거 */}
+      {/* <section className="mb-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -175,7 +177,7 @@ export default function Home() {
             같은 관심사를 가진 학우들과 편하게 대화해보세요
           </p>
         </motion.div>
-      </section>
+      </section> */}
 
       {/* 프로필 카드 섹션 */}
       <section className="mb-8 flex justify-center">

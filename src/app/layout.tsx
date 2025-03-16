@@ -95,7 +95,7 @@ export default function RootLayout({
 
   return (
     <html lang="ko">
-      <body className={`${inter.className} bg-trendy-gradient min-h-screen text-white`}>
+      <body className={`${inter.className} min-h-screen text-white`}>
         <div className="noise"></div>
         
         {/* 상단 바 */}
